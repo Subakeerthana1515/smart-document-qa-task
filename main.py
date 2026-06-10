@@ -6,8 +6,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 import config
-from api.upload import router as upload_router
-from api.chat import router as chat_router
+from src import database
+from api.sessions import router as sessions_router
 
 logging.basicConfig(
     level=logging.INFO,
@@ -17,16 +17,16 @@ logging.basicConfig(
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Ensure runtime directories exist before the first request arrives.
     os.makedirs(config.CHROMA_DB_PATH, exist_ok=True)
     os.makedirs(config.UPLOAD_DIR, exist_ok=True)
+    database.init_db()
     yield
 
 
 app = FastAPI(
     title="Smart Document Q&A API",
     description="RAG-based document question answering powered by Gemini 2.5 Flash.",
-    version="1.0.0",
+    version="2.0.0",
     lifespan=lifespan,
 )
 
@@ -38,8 +38,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(upload_router)
-app.include_router(chat_router)
+app.include_router(sessions_router)
 
 
 @app.get("/health", tags=["health"])

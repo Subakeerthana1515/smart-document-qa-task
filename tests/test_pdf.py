@@ -9,6 +9,8 @@ import config
 from src.pdf_loader import load_pdf
 from src.chunker import chunk_pages
 
+CHAT_ID = "test-session-01"
+
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -81,31 +83,38 @@ def test_load_pdf_blank_pdf_raises_user_friendly_error(blank_pdf_path):
 
 def test_chunk_pages_returns_non_empty_list(sample_pdf_path):
     pages = load_pdf(sample_pdf_path)
-    chunks = chunk_pages(pages, "sample.pdf")
+    chunks = chunk_pages(pages, "sample.pdf", CHAT_ID)
     assert len(chunks) > 0
 
 
 def test_chunk_pages_metadata_fields_present(sample_pdf_path):
     pages = load_pdf(sample_pdf_path)
-    chunks = chunk_pages(pages, "sample.pdf")
+    chunks = chunk_pages(pages, "sample.pdf", CHAT_ID)
     for chunk in chunks:
         assert "text" in chunk
         assert "metadata" in chunk
         meta = chunk["metadata"]
+        assert "chat_id" in meta
         assert "document_name" in meta
         assert "page" in meta
         assert "chunk_index" in meta
 
 
+def test_chunk_pages_chat_id_propagated(sample_pdf_path):
+    pages = load_pdf(sample_pdf_path)
+    chunks = chunk_pages(pages, "sample.pdf", CHAT_ID)
+    assert all(c["metadata"]["chat_id"] == CHAT_ID for c in chunks)
+
+
 def test_chunk_pages_document_name_propagated(sample_pdf_path):
     pages = load_pdf(sample_pdf_path)
-    chunks = chunk_pages(pages, "my_doc.pdf")
+    chunks = chunk_pages(pages, "my_doc.pdf", CHAT_ID)
     assert all(c["metadata"]["document_name"] == "my_doc.pdf" for c in chunks)
 
 
 def test_chunk_pages_text_length_within_bounds(sample_pdf_path):
     pages = load_pdf(sample_pdf_path)
-    chunks = chunk_pages(pages, "sample.pdf")
+    chunks = chunk_pages(pages, "sample.pdf", CHAT_ID)
     # Chunks may slightly exceed CHUNK_SIZE due to word boundaries, but not by much.
     for chunk in chunks:
         assert len(chunk["text"]) <= config.CHUNK_SIZE + config.CHUNK_OVERLAP
@@ -113,7 +122,7 @@ def test_chunk_pages_text_length_within_bounds(sample_pdf_path):
 
 def test_chunk_pages_chunk_index_is_sequential_per_page(sample_pdf_path):
     pages = load_pdf(sample_pdf_path)
-    chunks = chunk_pages(pages, "sample.pdf")
+    chunks = chunk_pages(pages, "sample.pdf", CHAT_ID)
     for page_num in {c["metadata"]["page"] for c in chunks}:
         page_chunks = [c for c in chunks if c["metadata"]["page"] == page_num]
         indices = [c["metadata"]["chunk_index"] for c in page_chunks]

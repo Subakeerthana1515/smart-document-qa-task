@@ -9,7 +9,7 @@ from src.llm import generate_answer
 logger = logging.getLogger(__name__)
 
 
-def ingest_document(file_path: str, document_name: str) -> dict:
+def ingest_document(file_path: str, document_name: str, chat_id: str) -> dict:
     """Full ingestion pipeline: PDF → pages → chunks → embeddings → ChromaDB.
 
     Returns:
@@ -18,7 +18,7 @@ def ingest_document(file_path: str, document_name: str) -> dict:
         chunks_added     (int)
     """
     pages = load_pdf(file_path)
-    chunks = chunk_pages(pages, document_name)
+    chunks = chunk_pages(pages, document_name, chat_id)
 
     texts = [c["text"] for c in chunks]
     embeddings = embed_texts(texts)
@@ -26,7 +26,8 @@ def ingest_document(file_path: str, document_name: str) -> dict:
     vector_store.add_chunks(chunks, embeddings)
 
     logger.info(
-        "Ingested '%s': %d pages, %d chunks.", document_name, len(pages), len(chunks)
+        "Ingested '%s' for chat %s: %d pages, %d chunks.",
+        document_name, chat_id, len(pages), len(chunks),
     )
     return {
         "document_name": document_name,
@@ -35,7 +36,7 @@ def ingest_document(file_path: str, document_name: str) -> dict:
     }
 
 
-def answer_question(question: str, top_k: int | None = None) -> dict:
+def answer_question(question: str, chat_id: str, top_k: int | None = None) -> dict:
     """Full query pipeline: question → retrieval → LLM → answer with citations.
 
     Returns:
@@ -43,7 +44,7 @@ def answer_question(question: str, top_k: int | None = None) -> dict:
         sources                (list of {document_name, page}, deduplicated)
         retrieved_chunks_count (int)
     """
-    retrieved_chunks = retrieve(question, top_k=top_k)
+    retrieved_chunks = retrieve(question, chat_id=chat_id, top_k=top_k)
     answer = generate_answer(question, retrieved_chunks)
 
     seen: set[tuple] = set()
