@@ -2,6 +2,8 @@
 
 A production-quality RAG (Retrieval-Augmented Generation) chatbot that lets you upload PDFs and ask questions about them. Answers are grounded strictly in document content and cite the source page.
 
+This project is designed for local execution and evaluation.
+
 ## Features
 
 - Upload and index PDF documents
@@ -13,7 +15,6 @@ A production-quality RAG (Retrieval-Augmented Generation) chatbot that lets you 
 - FastAPI REST backend
 - Streamlit frontend
 - Automated test suite (33 tests)
-- Render deployment ready
 
 ## Architecture
 
@@ -53,8 +54,7 @@ smart-document-qa/
 │   ├── test_retrieval.py embeddings + vector_store + retriever (isolated ChromaDB)
 │   └── test_llm.py       llm (mocked generate_content, no API calls)
 ├── main.py               FastAPI entry point
-├── config.py             All configuration, env-overridable
-└── render.yaml           Two-service Render deployment
+└── config.py             All configuration, env-overridable
 ```
 
 ## Local Setup
@@ -123,7 +123,6 @@ No API key is consumed during tests. The embedding model (`all-MiniLM-L6-v2`) is
 | `TOP_K` | `5` | Number of chunks retrieved per query |
 | `SIMILARITY_THRESHOLD` | `0.7` | Max cosine distance to include a chunk |
 | `MAX_FILE_SIZE_MB` | `50` | Max PDF upload size |
-| `API_BASE_URL` | `http://localhost:8000` | UI → API base URL (set on Render UI service) |
 
 ## API Reference
 
@@ -164,57 +163,7 @@ Response:
 }
 ```
 
-## Render Deployment
-
-### Step 1 — Push to GitHub
-
-```bash
-git init
-git add .
-git commit -m "Initial commit"
-git remote add origin <your-repo-url>
-git push -u origin main
-```
-
-> `.gitignore` already excludes `.env`, `database/chroma_db/`, and `documents/uploaded_pdfs/`.
-
-### Step 2 — Create services on Render
-
-1. Go to [render.com](https://render.com) → **New → Blueprint**
-2. Connect your GitHub repository
-3. Render reads `render.yaml` and creates both services automatically
-
-### Step 3 — Set the API key secret
-
-In the Render dashboard → **smart-qa-api** service → **Environment**:
-
-- Add `GEMINI_API_KEY` → paste your key
-
-This is the only value marked `sync: false` in `render.yaml` (i.e., not stored in the file).
-
-### Step 4 — Update the UI service URL
-
-After the API service deploys, copy its public URL (e.g. `https://smart-qa-api.onrender.com`).
-
-In the Render dashboard → **smart-qa-ui** service → **Environment**:
-
-- Set `API_BASE_URL` to the API service URL
-
-### Step 5 — Verify
-
-```bash
-curl https://smart-qa-api.onrender.com/health
-# {"status":"ok"}
-```
-
-Upload a PDF via the Streamlit UI, ask a question, and confirm a cited answer.
-
-### Persistence
-
-ChromaDB and uploaded PDFs are stored under `/data` which is a Render **persistent disk** attached to the API service. Ingested documents survive container redeploys and restarts. The UI service is stateless.
-
 ## Notes
 
 - **Scanned PDFs** (image-only, no embedded text layer) are not supported. The API returns a clear error message.
-- **Cold starts**: Render's free/starter plan may spin down inactive services. The first request after a cold start loads the embedding model (~5–10 s).
 - **Multi-document**: All indexed documents are queried together. The answer cites which document and page each excerpt came from.

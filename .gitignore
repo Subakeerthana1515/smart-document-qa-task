@@ -18,7 +18,7 @@ venv/
 env/
 ENV/
 
-# Runtime data (never commit — use Render persistent disk)
+# Runtime data (generated at runtime, do not commit)
 database/chroma_db/
 documents/uploaded_pdfs/
 

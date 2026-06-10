@@ -6,7 +6,7 @@ load_dotenv()
 # --- Secrets ---
 GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
 
-# --- Storage paths (env-overridable for Render/Docker) ---
+# --- Storage paths (env-overridable) ---
 CHROMA_DB_PATH: str = os.getenv("CHROMA_DB_PATH", "./database/chroma_db")
 UPLOAD_DIR: str = os.getenv("UPLOAD_DIR", "./documents/uploaded_pdfs")
 
