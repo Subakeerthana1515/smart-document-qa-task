@@ -38,6 +38,15 @@ class LLMError(Exception):
 
 def generate_answer(question: str, context_chunks: list[RetrievedChunk]) -> str:
     """Build a grounded prompt from retrieved chunks and call Gemini 2.5 Flash."""
+    
+    print("Retrieved chunks:", len(context_chunks))
+
+    for chunk in context_chunks:
+        print("=" * 50)
+        print(chunk.document_name)
+        print(chunk.page)
+        print(chunk.text[:200])
+
     if not context_chunks:
         return _NO_CONTEXT_RESPONSE
 
@@ -56,7 +65,10 @@ def generate_answer(question: str, context_chunks: list[RetrievedChunk]) -> str:
     )
 
     try:
-        response = _model.generate_content(prompt, generation_config=_generation_config)
+        response = _model.generate_content(
+            prompt,
+            generation_config=_generation_config
+        )
         return response.text
     except Exception as exc:
         logger.error("Gemini API error: %s", exc)
